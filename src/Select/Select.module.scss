@@ -1,0 +1,124 @@
+.wrapper {
+  flex-grow: 1;
+  max-width: 500px;
+  position: relative;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px 45px 10px 25px;
+  font-size: 16px;
+  border: 1px solid #bdbdbd;
+  background-color: #fff;
+  border-radius: 10px;
+  transition: border-color ease-in-out 200ms;
+
+  @media screen and (max-width: 768px) {
+    padding: 0 35px 0 15px;
+  }
+
+  &:hover {
+    border: 1px solid #119ad0;
+  }
+
+  &_active {
+    border: 1px solid #119ad0;
+    box-shadow: 0 0 3px 1px #119ad0;
+  }
+}
+
+.input {
+  display: inline-block;
+  border: none;
+  outline: none;
+  padding: 0;
+  color: #555;
+}
+
+.selectedOption {
+  border: 1px solid #eee;
+  padding: 6px;
+  border-radius: 5px;
+  margin-right: 5px;
+  cursor: pointer;
+  transition: border-color ease-in-out 200ms;
+  z-index: 1;
+
+  &:hover {
+    border: 1px solid #119ad0;
+  }
+
+  &:after {
+    margin-left: 5px;
+    content: "\2716";
+    transform: rotate(45deg);
+  }
+}
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  right: 25px;
+  width: 10px;
+  height: 10px;
+  border-left: 1px solid #222;
+  border-bottom: 1px solid #222;
+  pointer-events: none;
+  transform: translateY(-75%) rotate(-45deg);
+  transition: transform ease-in-out 200ms;
+
+  @media screen and (max-width: 768px) {
+    right: 15px;
+  }
+
+  &_up {
+    transform: translateY(-25%) rotate(135deg);
+  }
+}
+
+.dropField {
+  position: absolute;
+  z-index: 1;
+  border: 1px solid #bdbdbd;
+  top: calc(100% + 10px);
+  left: 0;
+  width: 100%;
+  max-height: 300px;
+  padding: 8px;
+  background-color: #fff;
+  border-radius: 6px;
+  box-shadow: 0 0 2px rgba(40, 41, 61, 0.04), 0 4px 8px rgba(96, 97, 112, 0.16);
+  overflow-y: auto;
+}
+
+.optionItem {
+  overflow: hidden;
+  flex-grow: 1;
+  padding: 10px;
+  border-radius: 5px;
+  color: #777;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 25px;
+  text-overflow: ellipsis;
+  transition: background-color ease-in-out 200ms;
+  user-select: none;
+  white-space: nowrap;
+
+  &:hover {
+    background-color: #f7f7f7;
+  }
+}
+
+.placeholder {
+  position: absolute;
+  top: 50%;
+  left: 25px;
+  color: #bdbdbd;
+  opacity: 1;
+  transform: translateY(-50%);
+
+  &_active {
+    opacity: 0;
+  }
+}
