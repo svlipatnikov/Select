@@ -1,12 +1,11 @@
 .wrapper {
-  flex-grow: 1;
-  max-width: 500px;
+  width: 400px;
   position: relative;
-  min-height: 60px;
+  min-height: 40px;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  padding: 10px 45px 10px 25px;
+  padding: 6px 35px 6px 15px;
   font-size: 16px;
   border: 1px solid #bdbdbd;
   background-color: #fff;
@@ -32,14 +31,30 @@
   border: none;
   outline: none;
   padding: 0;
+  margin: 3px 0;
   color: #555;
+  height: 34px;
+}
+
+.placeholder {
+  position: absolute;
+  top: 50%;
+  left: 15px;
+  color: #bdbdbd;
+  opacity: 1;
+  transform: translateY(-50%);
+
+  &_active {
+    opacity: 0;
+  }
 }
 
 .selectedOption {
+  height: 34px;
   border: 1px solid #eee;
   padding: 6px;
   border-radius: 5px;
-  margin-right: 5px;
+  margin: 3px;
   cursor: pointer;
   transition: border-color ease-in-out 200ms;
   z-index: 1;
@@ -58,7 +73,7 @@
 .arrow {
   position: absolute;
   top: 50%;
-  right: 25px;
+  right: 15px;
   width: 10px;
   height: 10px;
   border-left: 1px solid #222;
@@ -76,25 +91,56 @@
   }
 }
 
+.clearBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: 10px;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+
+  &:before,
+  &:after {
+    right: 50%;
+    position: absolute;
+    content: " ";
+    height: 20px;
+    width: 2px;
+    background-color: #333;
+  }
+  &:before {
+    transform: rotate(45deg);
+  }
+  &:after {
+    transform: rotate(-45deg);
+  }
+}
+
 .dropField {
   position: absolute;
-  z-index: 1;
+  z-index: 10;
   border: 1px solid #bdbdbd;
   top: calc(100% + 10px);
   left: 0;
   width: 100%;
-  max-height: 300px;
-  padding: 8px;
   background-color: #fff;
   border-radius: 6px;
   box-shadow: 0 0 2px rgba(40, 41, 61, 0.04), 0 4px 8px rgba(96, 97, 112, 0.16);
   overflow-y: auto;
+
+  &Container {
+    position: relative;
+    padding: 16px 8px;
+    max-height: 300px;
+    min-height: 50px;
+  }
 }
 
 .optionItem {
   overflow: hidden;
   flex-grow: 1;
-  padding: 10px;
+  padding: 6px;
   border-radius: 5px;
   color: #777;
   cursor: pointer;
@@ -110,15 +156,40 @@
   }
 }
 
-.placeholder {
+.loader {
   position: absolute;
-  top: 50%;
-  left: 25px;
-  color: #bdbdbd;
-  opacity: 1;
-  transform: translateY(-50%);
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: #fff;
+  opacity: 0.8;
 
-  &_active {
-    opacity: 0;
+  &::after {
+    position: absolute;
+    top: calc(50% - 15px);
+    left: calc(50% - 15px);
+    content: "";
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    border: 5px solid #119ad0;
+    border-left-color: #fff;
+    border-right-color: #fff;
+    animation: spin 500ms linear 0s infinite;
+  }
+}
+
+.empty {
+  color: #ccc;
+  padding: 6px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }

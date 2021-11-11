@@ -1,46 +1,71 @@
-import React, { useRef, useState, useEffect, useMemo } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import cn from "classnames";
 
 import styles from "./Select.module.scss";
+import useDebounce from "../hooks/useDebonce";
 
-const Select = ({ placeholder, selected, options, onSelect, multiple }) => {
+const Select = ({
+  placeholder,
+  selected,
+  options,
+  onSelect,
+  multiple,
+  onServerSearch,
+  searchDelay,
+}) => {
   const [search, setSearch] = useState((!multiple && selected?.label) || "");
+  const [prevSearch, setPrevSearch] = useState("");
   const [selectedOptions, setSelectedOptions] = useState(
     (multiple && selected) || []
   );
+  const [filteredOptions, setFilteredOptions] = useState(options);
   const [isOpen, setOpen] = useState(false);
+  const [isLoading, setLoading] = useState(false);
   const selectRef = useRef(null);
   const inputRef = useRef(null);
+  const debouncedSearch = useDebounce(search, searchDelay);
 
-  const filteredOptions = useMemo(() => {
-    const searchLC = search.toLowerCase();
-
-    return options
-      .filter(
-        (option) => !search || option.label.toLowerCase().includes(searchLC)
-      )
-      .filter(
-        (option) =>
-          !multiple ||
-          selectedOptions.findIndex((s) => s.id === option.id) === -1
+  const frontSearch = useCallback(
+    (searchText) => {
+      const searchLC = searchText.toLowerCase();
+      return options.filter(
+        (option) => !searchLC || option.label.toLowerCase().includes(searchLC)
       );
-  }, [multiple, options, search, selectedOptions]);
+    },
+    [options]
+  );
 
-  const handleChange = (event) => setSearch(event.target.value);
+  const handleClear = (event) => {
+    event.stopPropagation();
+    onSelect(multiple ? [] : null);
+  };
+
+  const handleChange = (event) => {
+    if (isLoading) return;
+    setSearch(event.target.value);
+  };
 
   const handleWrapperClick = () => {
-    if (!isOpen) setOpen(true);
-    inputRef.current.focus();
+    if (!isOpen) {
+      setOpen(true);
+      inputRef.current.focus();
+      setFilteredOptions(options);
+    } else {
+      if (multiple) inputRef.current.focus();
+    }
     if (!multiple && selected) setSearch("");
   };
 
   const handleSelect = (option) => () => {
     if (multiple) {
-      onSelect([...selectedOptions, option]);
+      setSearch("");
+      if (selectedOptions.findIndex((s) => s.id === option.id) === -1)
+        onSelect([...selectedOptions, option]);
     } else {
       onSelect(option);
       setOpen(false);
+      inputRef.current.blur();
     }
   };
 
@@ -49,13 +74,9 @@ const Select = ({ placeholder, selected, options, onSelect, multiple }) => {
   };
 
   useEffect(() => {
-    if (!multiple) setSearch(selected?.label || "");
+    if (!multiple) setSearch("");
     else setSelectedOptions(selected || []);
   }, [multiple, selected]);
-
-  useEffect(() => {
-    if (!isOpen && !multiple && selected) setSearch(selected?.label || "");
-  }, [isOpen, multiple, selected]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -65,6 +86,24 @@ const Select = ({ placeholder, selected, options, onSelect, multiple }) => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [selectRef]);
+
+  useEffect(() => {
+    if (!onServerSearch || debouncedSearch === prevSearch) return;
+    if (!debouncedSearch) return setFilteredOptions(options);
+
+    setPrevSearch(debouncedSearch);
+    setLoading(true);
+    onServerSearch(debouncedSearch)
+      .then((filteredData) => setFilteredOptions(filteredData))
+      .catch(() => setFilteredOptions(frontSearch(debouncedSearch)))
+      .finally(() => setLoading(false));
+  }, [debouncedSearch, options, onServerSearch, frontSearch, prevSearch]);
+
+  useEffect(() => {
+    if (onServerSearch) return;
+    if (!search) return setFilteredOptions(options);
+    setFilteredOptions(frontSearch(search));
+  }, [search, options, frontSearch, onServerSearch]);
 
   return (
     <div
@@ -85,6 +124,8 @@ const Select = ({ placeholder, selected, options, onSelect, multiple }) => {
             {value}
           </div>
         ))}
+
+      {!multiple && selected && !isOpen && selected.label}
 
       <input
         className={styles.input}
@@ -108,22 +149,33 @@ const Select = ({ placeholder, selected, options, onSelect, multiple }) => {
         {placeholder}
       </div>
 
-      <div className={cn(styles.arrow, { [styles.arrow_up]: isOpen })} />
+      {(!multiple && selected) || (multiple && selectedOptions.length) ? (
+        <div className={styles.clearBtn} onClick={handleClear} />
+      ) : (
+        <div className={cn(styles.arrow, { [styles.arrow_up]: isOpen })} />
+      )}
 
-      {isOpen && !!filteredOptions?.length && (
+      {isOpen && (
         <div className={styles.dropField}>
-          {filteredOptions.map((option) => (
-            <div
-              className={cn({
-                [styles.optionItem]: true,
-                [styles.optionItem_selected]: option.value === selected?.value,
-              })}
-              key={option.id}
-              onClick={handleSelect(option)}
-            >
-              {option.label}
+          <div className={styles.dropFieldContainer}>
+            <div>
+              {filteredOptions.map((option) => (
+                <div
+                  className={styles.optionItem}
+                  key={option.id}
+                  onClick={handleSelect(option)}
+                >
+                  {option.label}
+                </div>
+              ))}
+
+              {!filteredOptions.length && (
+                <div className={styles.empty}>Ничего не найдено</div>
+              )}
+
+              {isLoading && <div className={styles.loader} />}
             </div>
-          ))}
+          </div>
         </div>
       )}
     </div>
@@ -138,10 +190,13 @@ Select.propTypes = {
   options: PropTypes.arrayOf(PropTypes.object),
   onSelect: PropTypes.func,
   multiple: PropTypes.bool,
+  onServerSearch: PropTypes.func,
+  searchDelay: PropTypes.number,
 };
 
 Select.defaultProps = {
   onSelect: () => {},
   options: [],
   multiple: false,
+  searchDelay: 300,
 };
