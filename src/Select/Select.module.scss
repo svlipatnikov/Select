@@ -5,7 +5,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  padding: 6px 35px 6px 15px;
+  padding: 6px 35px 6px 12px;
   font-size: 16px;
   border: 1px solid #bdbdbd;
   background-color: #fff;
@@ -31,7 +31,7 @@
   border: none;
   outline: none;
   padding: 0;
-  margin: 3px 0;
+  margin: 3px;
   color: #555;
   height: 34px;
 }
@@ -64,6 +64,7 @@
   }
 
   &:after {
+    color: #666;
     margin-left: 5px;
     content: "\2716";
     transform: rotate(45deg);
@@ -76,15 +77,11 @@
   right: 15px;
   width: 10px;
   height: 10px;
-  border-left: 1px solid #222;
-  border-bottom: 1px solid #222;
+  border-left: 2px solid #555;
+  border-bottom: 2px solid #555;
   pointer-events: none;
   transform: translateY(-75%) rotate(-45deg);
   transition: transform ease-in-out 200ms;
-
-  @media screen and (max-width: 768px) {
-    right: 15px;
-  }
 
   &_up {
     transform: translateY(-25%) rotate(135deg);
@@ -107,7 +104,7 @@
     content: " ";
     height: 20px;
     width: 2px;
-    background-color: #333;
+    background-color: #555;
   }
   &:before {
     transform: rotate(45deg);
@@ -126,13 +123,14 @@
   width: 100%;
   background-color: #fff;
   border-radius: 6px;
-  box-shadow: 0 0 2px rgba(40, 41, 61, 0.04), 0 4px 8px rgba(96, 97, 112, 0.16);
+  box-shadow: 0 5px 10px rgba(#000, 0.2);
   overflow-y: auto;
+  animation: open 300ms ease-in-out 0s;
 
   &Container {
     position: relative;
     padding: 16px 8px;
-    max-height: 300px;
+    max-height: 250px;
     min-height: 50px;
   }
 }
@@ -140,7 +138,8 @@
 .optionItem {
   overflow: hidden;
   flex-grow: 1;
-  padding: 6px;
+  margin: 2px 0;
+  padding: 4px;
   border-radius: 5px;
   color: #777;
   cursor: pointer;
@@ -154,6 +153,24 @@
   &:hover {
     background-color: #f7f7f7;
   }
+
+  &_selected {
+    position: relative;
+    background-color: rgba($color: #119ad0, $alpha: 0.1);
+    font-weight: 500;
+
+    &::after {
+      position: absolute;
+      content: "";
+      width: 12px;
+      height: 6px;
+      border-left: 2px solid #119ad0;
+      border-bottom: 2px solid #119ad0;
+      right: 10px;
+      top: 11px;
+      transform: rotate(-45deg);
+    }
+  }
 }
 
 .loader {
@@ -164,6 +181,7 @@
   left: 0;
   background-color: #fff;
   opacity: 0.8;
+  pointer-events: none;
 
   &::after {
     position: absolute;
@@ -191,5 +209,16 @@
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes open {
+  from {
+    opacity: 0;
+    transform: translateY(-10%) scaleY(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
   }
 }

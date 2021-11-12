@@ -26,6 +26,9 @@ const Select = ({
   const inputRef = useRef(null);
   const debouncedSearch = useDebounce(search, searchDelay);
 
+  const getIsSelected = (id) =>
+    multiple ? !!selectedOptions.find((o) => o.id === id) : selected?.id === id;
+
   const frontSearch = useCallback(
     (searchText) => {
       const searchLC = searchText.toLowerCase();
@@ -60,8 +63,9 @@ const Select = ({
   const handleSelect = (option) => () => {
     if (multiple) {
       setSearch("");
-      if (selectedOptions.findIndex((s) => s.id === option.id) === -1)
-        onSelect([...selectedOptions, option]);
+      getIsSelected(option.id)
+        ? onSelect(selectedOptions.filter((o) => o.id !== option.id))
+        : onSelect([...selectedOptions, option]);
     } else {
       onSelect(option);
       setOpen(false);
@@ -142,7 +146,7 @@ const Select = ({
           [styles.placeholder]: true,
           [styles.placeholder_active]:
             !!search ||
-            (!multiple && selected) ||
+            (!multiple && selected && !isOpen) ||
             (multiple && selectedOptions?.length),
         })}
       >
@@ -161,7 +165,10 @@ const Select = ({
             <div>
               {filteredOptions.map((option) => (
                 <div
-                  className={styles.optionItem}
+                  className={cn({
+                    [styles.optionItem]: true,
+                    [styles.optionItem_selected]: getIsSelected(option.id),
+                  })}
                   key={option.id}
                   onClick={handleSelect(option)}
                 >
