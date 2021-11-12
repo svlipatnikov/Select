@@ -4,6 +4,7 @@ import cn from "classnames";
 
 import styles from "./Select.module.scss";
 import useDebounce from "../hooks/useDebonce";
+import { isEnter, isEsc } from "../helpers/keyboard";
 
 const Select = ({
   placeholder,
@@ -24,12 +25,13 @@ const Select = ({
   const [isLoading, setLoading] = useState(false);
   const selectRef = useRef(null);
   const inputRef = useRef(null);
+  const wrapperRef = useRef(null);
   const debouncedSearch = useDebounce(search, searchDelay);
 
   const getIsSelected = (id) =>
     multiple ? !!selectedOptions.find((o) => o.id === id) : selected?.id === id;
 
-  const frontSearch = useCallback(
+  const clientSearch = useCallback(
     (searchText) => {
       const searchLC = searchText.toLowerCase();
       return options.filter(
@@ -39,6 +41,14 @@ const Select = ({
     [options]
   );
 
+  const handleKeyDown = (event) => {
+    if (isEsc(event)) {
+      setOpen(false);
+      setSearch("");
+    }
+    if (isEnter(event)) setOpen(true);
+  };
+
   const handleClear = (event) => {
     event.stopPropagation();
     onSelect(multiple ? [] : null);
@@ -46,30 +56,31 @@ const Select = ({
 
   const handleChange = (event) => {
     if (isLoading) return;
+    if (!isOpen) setOpen(true);
     setSearch(event.target.value);
   };
 
-  const handleWrapperClick = () => {
+  const handleContainerClick = () => {
     if (!isOpen) {
       setOpen(true);
-      inputRef.current.focus();
       setFilteredOptions(options);
-    } else {
-      if (multiple) inputRef.current.focus();
     }
-    if (!multiple && selected) setSearch("");
+    inputRef.current.focus();
   };
 
   const handleSelect = (option) => () => {
+    if (isLoading) return;
+
     if (multiple) {
       setSearch("");
+      inputRef.current.focus();
       getIsSelected(option.id)
         ? onSelect(selectedOptions.filter((o) => o.id !== option.id))
         : onSelect([...selectedOptions, option]);
     } else {
+      inputRef.current.blur();
       onSelect(option);
       setOpen(false);
-      inputRef.current.blur();
     }
   };
 
@@ -84,12 +95,15 @@ const Select = ({
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!selectRef.current.contains(event.target)) setOpen(false);
+      if (!wrapperRef.current.contains(event.target)) {
+        setOpen(false);
+        setSearch("");
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [selectRef]);
+  }, [wrapperRef]);
 
   useEffect(() => {
     if (!onServerSearch || debouncedSearch === prevSearch) return;
@@ -99,65 +113,75 @@ const Select = ({
     setLoading(true);
     onServerSearch(debouncedSearch)
       .then((filteredData) => setFilteredOptions(filteredData))
-      .catch(() => setFilteredOptions(frontSearch(debouncedSearch)))
+      .catch(() => setFilteredOptions(clientSearch(debouncedSearch)))
       .finally(() => setLoading(false));
-  }, [debouncedSearch, options, onServerSearch, frontSearch, prevSearch]);
+  }, [debouncedSearch, options, onServerSearch, clientSearch, prevSearch]);
 
   useEffect(() => {
     if (onServerSearch) return;
     if (!search) return setFilteredOptions(options);
-    setFilteredOptions(frontSearch(search));
-  }, [search, options, frontSearch, onServerSearch]);
+    setFilteredOptions(clientSearch(search));
+  }, [search, options, clientSearch, onServerSearch]);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {};
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.addEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
 
   return (
-    <div
-      className={cn({
-        [styles.wrapper]: true,
-        [styles.wrapper_active]: isOpen,
-      })}
-      onClick={handleWrapperClick}
-      ref={selectRef}
-    >
-      {multiple &&
-        selectedOptions.map(({ id, value }) => (
-          <div
-            key={id}
-            className={styles.selectedOption}
-            onClick={handleRemove(id)}
-          >
-            {value}
-          </div>
-        ))}
-
-      {!multiple && selected && !isOpen && selected.label}
-
-      <input
-        className={styles.input}
-        type="text"
-        value={search}
-        onChange={handleChange}
-        size={search.length || 1}
-        maxLength={20}
-        ref={inputRef}
-      />
-
+    <div className={styles.wrapper} ref={wrapperRef}>
       <div
         className={cn({
-          [styles.placeholder]: true,
-          [styles.placeholder_active]:
-            !!search ||
-            (!multiple && selected && !isOpen) ||
-            (multiple && selectedOptions?.length),
+          [styles.inputContainer]: true,
+          [styles.inputContainer_active]: isOpen,
         })}
+        onClick={handleContainerClick}
+        ref={selectRef}
       >
-        {placeholder}
-      </div>
+        {multiple &&
+          selectedOptions.map(({ id, value }) => (
+            <div
+              key={id}
+              className={styles.selectedOption}
+              onClick={handleRemove(id)}
+            >
+              {value}
+            </div>
+          ))}
 
-      {(!multiple && selected) || (multiple && selectedOptions.length) ? (
-        <div className={styles.clearBtn} onClick={handleClear} />
-      ) : (
-        <div className={cn(styles.arrow, { [styles.arrow_up]: isOpen })} />
-      )}
+        {!multiple && selected && !isOpen && selected.label}
+
+        <input
+          className={styles.input}
+          type="text"
+          value={search}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          size={search.length || 1}
+          maxLength={20}
+          ref={inputRef}
+        />
+
+        <div
+          className={cn({
+            [styles.placeholder]: true,
+            [styles.placeholder_active]:
+              !!search ||
+              (!multiple && selected && !isOpen) ||
+              (multiple && selectedOptions?.length),
+          })}
+        >
+          {placeholder}
+        </div>
+
+        {(!multiple && selected) || (multiple && selectedOptions.length) ? (
+          <div className={styles.clearBtn} onClick={handleClear} />
+        ) : (
+          <div className={cn(styles.arrow, { [styles.arrow_up]: isOpen })} />
+        )}
+      </div>
 
       {isOpen && (
         <div className={styles.dropField}>
@@ -179,10 +203,10 @@ const Select = ({
               {!filteredOptions.length && (
                 <div className={styles.empty}>Ничего не найдено</div>
               )}
-
-              {isLoading && <div className={styles.loader} />}
             </div>
           </div>
+
+          {isLoading && <div className={styles.loader} />}
         </div>
       )}
     </div>

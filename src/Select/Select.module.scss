@@ -1,4 +1,8 @@
 .wrapper {
+  position: relative;
+}
+
+.inputContainer {
   width: 400px;
   position: relative;
   min-height: 40px;
@@ -11,10 +15,6 @@
   background-color: #fff;
   border-radius: 10px;
   transition: border-color ease-in-out 200ms;
-
-  @media screen and (max-width: 768px) {
-    padding: 0 35px 0 15px;
-  }
 
   &:hover {
     border: 1px solid #119ad0;
@@ -39,7 +39,8 @@
 .placeholder {
   position: absolute;
   top: 50%;
-  left: 15px;
+  left: 16px;
+  padding-bottom: 1px;
   color: #bdbdbd;
   opacity: 1;
   transform: translateY(-50%);
@@ -132,6 +133,7 @@
     padding: 16px 8px;
     max-height: 250px;
     min-height: 50px;
+    overflow-y: scroll;
   }
 }
 
@@ -181,7 +183,7 @@
   left: 0;
   background-color: #fff;
   opacity: 0.8;
-  pointer-events: none;
+  z-index: 11;
 
   &::after {
     position: absolute;
