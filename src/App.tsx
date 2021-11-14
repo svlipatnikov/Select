@@ -1,29 +1,16 @@
 import React, { useState } from "react";
 import Select from "./Select";
 
+import { mockServerSearch } from "./mock/serverSearch";
+import { options } from "./mock/options";
+import { Option } from "./Select/types";
 import styles from "./App.module.scss";
 
-import { options } from "./options";
-
 const App = () => {
-  const [selected1, setSelected1] = useState();
-  const [selected2, setSelected2] = useState();
-  const [selected3, setSelected3] = useState();
-  const [selected4, setSelected4] = useState();
-
-  const mockServerSearch = (isError) => (searchText) => {
-    const searcLC = searchText.toLowerCase();
-    const filteredOptions = options.filter(
-      (option) => !searchText || option.label.toLowerCase().includes(searcLC)
-    );
-
-    if (isError || !filteredOptions.length)
-      return new Promise((_, reject) => setTimeout(reject, 1500));
-
-    return new Promise((resolve) =>
-      setTimeout(() => resolve(filteredOptions), 1500)
-    );
-  };
+  const [selected1, setSelected1] = useState<Option | Option[] | null>(null);
+  const [selected2, setSelected2] = useState<Option | Option[] | null>([]);
+  const [selected3, setSelected3] = useState<Option | Option[] | null>(null);
+  const [selected4, setSelected4] = useState<Option | Option[] | null>([]);
 
   return (
     <div className={styles.wrapper}>
@@ -50,7 +37,7 @@ const App = () => {
         options={options}
         selected={selected3}
         onSelect={setSelected3}
-        onServerSearch={mockServerSearch(false)}
+        onServerSearch={mockServerSearch(options, false)}
         searchDelay={500}
       />
 
@@ -60,9 +47,9 @@ const App = () => {
         options={options}
         selected={selected4}
         onSelect={setSelected4}
-        multiple
-        onServerSearch={mockServerSearch(true)}
+        onServerSearch={mockServerSearch(options, true)}
         searchDelay={500}
+        multiple
       />
     </div>
   );

@@ -1,10 +1,11 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import PropTypes from "prop-types";
 import cn from "classnames";
 
-import styles from "./Select.module.scss";
-import useDebounce from "../hooks/useDebonce";
 import { isEnter, isEsc } from "../helpers/keyboard";
+import useDebounce from "../hooks/useDebonce";
+
+import styles from "./Select.module.scss";
+import { Option, SelectProps } from "./types";
 
 const Select = ({
   placeholder,
@@ -14,34 +15,34 @@ const Select = ({
   multiple,
   onServerSearch,
   searchDelay,
-}) => {
-  const [search, setSearch] = useState((!multiple && selected?.label) || "");
+}: SelectProps) => {
+  const [search, setSearch] = useState("");
   const [prevSearch, setPrevSearch] = useState("");
-  const [selectedOptions, setSelectedOptions] = useState(
-    (multiple && selected) || []
-  );
-  const [filteredOptions, setFilteredOptions] = useState(options);
+  const [filteredOptions, setFilteredOptions] = useState(options || []);
   const [isOpen, setOpen] = useState(false);
   const [isLoading, setLoading] = useState(false);
-  const selectRef = useRef(null);
-  const inputRef = useRef(null);
-  const wrapperRef = useRef(null);
-  const debouncedSearch = useDebounce(search, searchDelay);
+  const selectRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const debouncedSearch = useDebounce(search, searchDelay || 300);
 
-  const getIsSelected = (id) =>
-    multiple ? !!selectedOptions.find((o) => o.id === id) : selected?.id === id;
+  const getIsSelected = (id: number): boolean =>
+    multiple
+      ? (selected as Option[])?.some((option: Option) => option.id === id)
+      : (selected as Option)?.id === id;
 
   const clientSearch = useCallback(
     (searchText) => {
       const searchLC = searchText.toLowerCase();
       return options.filter(
-        (option) => !searchLC || option.label.toLowerCase().includes(searchLC)
+        (option: Option) =>
+          !searchLC || option.label.toLowerCase().includes(searchLC)
       );
     },
     [options]
   );
 
-  const handleKeyDown = (event) => {
+  const handleKeyDown = (event: React.KeyboardEvent) => {
     if (isEsc(event)) {
       setOpen(false);
       setSearch("");
@@ -49,12 +50,12 @@ const Select = ({
     if (isEnter(event)) setOpen(true);
   };
 
-  const handleClear = (event) => {
+  const handleClear = (event: React.MouseEvent) => {
     event.stopPropagation();
     onSelect(multiple ? [] : null);
   };
 
-  const handleChange = (event) => {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (isLoading) return;
     if (!isOpen) setOpen(true);
     setSearch(event.target.value);
@@ -65,37 +66,34 @@ const Select = ({
       setOpen(true);
       setFilteredOptions(options);
     }
-    inputRef.current.focus();
+    inputRef.current?.focus();
   };
 
-  const handleSelect = (option) => () => {
+  const handleSelect = (option: Option) => () => {
     if (isLoading) return;
 
+    setSearch("");
     if (multiple) {
-      setSearch("");
-      inputRef.current.focus();
+      inputRef.current?.focus();
       getIsSelected(option.id)
-        ? onSelect(selectedOptions.filter((o) => o.id !== option.id))
-        : onSelect([...selectedOptions, option]);
+        ? onSelect(
+            (selected as Option[])?.filter((o) => o.id !== option.id) || []
+          )
+        : onSelect([...((selected as Option[]) || []), option]);
     } else {
-      inputRef.current.blur();
+      inputRef.current?.blur();
       onSelect(option);
       setOpen(false);
     }
   };
 
-  const handleRemove = (id) => () => {
-    onSelect(selectedOptions.filter((o) => o.id !== id));
+  const handleRemove = (id: number) => () => {
+    onSelect((selected as Option[]).filter((o) => o.id !== id));
   };
 
   useEffect(() => {
-    if (!multiple) setSearch("");
-    else setSelectedOptions(selected || []);
-  }, [multiple, selected]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!wrapperRef.current.contains(event.target)) {
+    const handleClickOutside = (event: Event) => {
+      if (!wrapperRef.current?.contains(event.target as HTMLElement)) {
         setOpen(false);
         setSearch("");
       }
@@ -112,23 +110,16 @@ const Select = ({
     setPrevSearch(debouncedSearch);
     setLoading(true);
     onServerSearch(debouncedSearch)
-      .then((filteredData) => setFilteredOptions(filteredData))
+      .then((filteredData) => setFilteredOptions(filteredData || []))
       .catch(() => setFilteredOptions(clientSearch(debouncedSearch)))
       .finally(() => setLoading(false));
   }, [debouncedSearch, options, onServerSearch, clientSearch, prevSearch]);
 
   useEffect(() => {
-    if (onServerSearch) return;
+    if (!!onServerSearch) return;
     if (!search) return setFilteredOptions(options);
     setFilteredOptions(clientSearch(search));
   }, [search, options, clientSearch, onServerSearch]);
-
-  useEffect(() => {
-    const handleKeyDown = (event) => {};
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.addEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
 
   return (
     <div className={styles.wrapper} ref={wrapperRef}>
@@ -141,7 +132,7 @@ const Select = ({
         ref={selectRef}
       >
         {multiple &&
-          selectedOptions.map(({ id, value }) => (
+          (selected as Option[])?.map(({ id, value }) => (
             <div
               key={id}
               className={styles.selectedOption}
@@ -151,7 +142,7 @@ const Select = ({
             </div>
           ))}
 
-        {!multiple && selected && !isOpen && selected.label}
+        {!multiple && selected && !isOpen && (selected as Option)?.label}
 
         <input
           className={styles.input}
@@ -169,14 +160,15 @@ const Select = ({
             [styles.placeholder]: true,
             [styles.placeholder_active]:
               !!search ||
-              (!multiple && selected && !isOpen) ||
-              (multiple && selectedOptions?.length),
+              (!multiple && (selected as Option) && !isOpen) ||
+              (multiple && (selected as Option[])?.length),
           })}
         >
           {placeholder}
         </div>
 
-        {(!multiple && selected) || (multiple && selectedOptions.length) ? (
+        {(!multiple && (selected as Option)) ||
+        (multiple && (selected as Option[])?.length) ? (
           <div className={styles.clearBtn} onClick={handleClear} />
         ) : (
           <div className={cn(styles.arrow, { [styles.arrow_up]: isOpen })} />
@@ -214,20 +206,3 @@ const Select = ({
 };
 
 export default Select;
-
-Select.propTypes = {
-  placeholder: PropTypes.string,
-  selected: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
-  options: PropTypes.arrayOf(PropTypes.object),
-  onSelect: PropTypes.func,
-  multiple: PropTypes.bool,
-  onServerSearch: PropTypes.func,
-  searchDelay: PropTypes.number,
-};
-
-Select.defaultProps = {
-  onSelect: () => {},
-  options: [],
-  multiple: false,
-  searchDelay: 300,
-};
